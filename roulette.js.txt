@@ -1,0 +1,216 @@
+const canvas = document.getElementById("wheelCanvas");
+const ctx = canvas.getContext("2d");
+const resultDiv = document.getElementById("result");
+const currencyDiv = document.getElementById("currency");
+const playerName = localStorage.getItem("playerName") || "Player";
+
+let money = parseInt(localStorage.getItem("rouletteMoney")) || 1000;
+let angle = 0;
+let highlightIndex = null;
+const numbers = Array.from({ length: 37 }, (_, i) => i);
+const colors = numbers.map(n => (n === 0 ? "green" : n % 2 === 0 ? "black" : "red"));
+
+function drawWheel() {
+  const radius = canvas.width / 2;
+  const centerX = canvas.width / 2;
+  const centerY = canvas.height / 2;
+  const arc = (2 * Math.PI) / numbers.length;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.rotate(angle);
+
+  numbers.forEach((num, i) => {
+    const startAngle = i * arc;
+    ctx.beginPath();
+    ctx.fillStyle = colors[i];
+    if (i === highlightIndex) ctx.fillStyle = "gold";
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, radius, startAngle, startAngle + arc);
+    ctx.fill();
+    ctx.strokeStyle = "#333";
+    ctx.stroke();
+
+    ctx.save();
+    ctx.rotate(startAngle + arc / 2);
+    ctx.translate(radius * 0.7, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = "white";
+    ctx.font = "12px sans-serif";
+    ctx.fillText(num, -ctx.measureText(num).width / 2, 0);
+    ctx.restore();
+  });
+
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = "#000";
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(centerX, 0);
+  ctx.lineTo(centerX - 10, 20);
+  ctx.lineTo(centerX + 10, 20);
+  ctx.closePath();
+  ctx.fillStyle = "gold";
+  ctx.fill();
+}
+
+drawWheel();
+updateCurrency();
+updateLeaderboard();
+
+function spinWheel() {
+  const betNumber = parseInt(document.getElementById("bet-number").value);
+  const betColor = document.getElementById("bet-color").value;
+  const betOddEven = document.getElementById("bet-odd-even").value;
+  const betThird = document.getElementById("bet-third").value;
+  const betAmount = parseInt(document.getElementById("bet-amount").value);
+
+  if (isNaN(betAmount) || betAmount <= 0 || betAmount > money) return alert("Invalid bet.");
+
+  let spins = 0;
+  const maxSpins = 50;
+  let spinSpeed = Math.random() * 0.1 + 0.3;
+  const interval = setInterval(() => {
+    angle += spinSpeed;
+    drawWheel();
+    spins++;
+    spinSpeed *= 0.97;
+    if (spins > maxSpins) {
+      clearInterval(interval);
+      angle = angle % (2 * Math.PI);
+      const landedIndex = Math.floor(numbers.length - (angle / (2 * Math.PI)) * numbers.length) % numbers.length;
+      highlightIndex = landedIndex;
+      drawWheel();
+
+      const landedNumber = numbers[landedIndex];
+      const landedColor = colors[landedIndex];
+
+      let payout = 0;
+      let messages = [`Landed on ${landedNumber} (${landedColor}).`];
+
+      // Number bet
+      if (!isNaN(betNumber)) {
+        if (landedNumber === betNumber) {
+          payout += betAmount * 35;
+          messages.push("Number bet won!");
+        } else {
+          payout -= betAmount;
+          messages.push("Number bet lost.");
+        }
+      }
+
+      // Color bet
+      if (betColor === landedColor) {
+        payout += betAmount;
+        messages.push("Color bet won!");
+      } else if (betColor) {
+        payout -= betAmount;
+        messages.push("Color bet lost.");
+      }
+
+      // Odd/Even bet
+      if (landedNumber !== 0) {
+        if (betOddEven === "odd" && landedNumber % 2 === 1) {
+          payout += betAmount;
+          messages.push("Odd bet won!");
+        } else if (betOddEven === "even" && landedNumber % 2 === 0) {
+          payout += betAmount;
+          messages.push("Even bet won!");
+        } else if (betOddEven) {
+          payout -= betAmount;
+          messages.push("Odd/Even bet lost.");
+        }
+      }
+
+      // Thirds bet
+      if (betThird) {
+        const range = {
+          first: landedNumber >= 1 && landedNumber <= 12,
+          second: landedNumber >= 13 && landedNumber <= 24,
+          third: landedNumber >= 25 && landedNumber <= 36
+        };
+        if (range[betThird]) {
+          payout += betAmount * 2;
+          messages.push("Third bet won!");
+        } else {
+          payout -= betAmount;
+          messages.push("Third bet lost.");
+        }
+      }
+
+      money += payout;
+      localStorage.setItem("rouletteMoney", money);
+      updateCurrency();
+      updateLeaderboard();
+      resultDiv.innerHTML = messages.join("<br>");
+    }
+  }, 40);
+}
+
+function updateCurrency() {
+  currencyDiv.innerHTML = `<h2>$${money} - ${playerName}</h2>`;
+}
+
+function updateLeaderboard() {
+  const entry = {
+    name: playerName,
+    money,
+    time: new Date().toLocaleTimeString()
+  };
+  const list = JSON.parse(localStorage.getItem("rouletteLeaderboard") || "[]");
+  const existing = list.find(e => e.name === playerName);
+  if (existing) existing.money = money, existing.time = entry.time;
+  else list.push(entry);
+
+  list.sort((a, b) => b.money - a.money);
+  localStorage.setItem("rouletteLeaderboard", JSON.stringify(list));
+
+  const tbody = document.getElementById("leaderboard-body");
+  tbody.innerHTML = list.slice(0, 10).map((e, i) => `
+    <tr><td>${i + 1}</td><td>${e.name}</td><td>$${e.money}</td><td>${e.time}</td></tr>
+  `).join("");
+}
+
+// Enhance betting table UI
+const bettingControls = document.getElementById("betting-controls");
+if (bettingControls) {
+  bettingControls.innerHTML = `
+    <div class="bet-group">
+      <label>Number (0–36):</label>
+      <input type="number" id="bet-number" min="0" max="36">
+    </div>
+    <div class="bet-group">
+      <label>Color:</label>
+      <select id="bet-color">
+        <option value="">None</option>
+        <option value="red">Red</option>
+        <option value="black">Black</option>
+      </select>
+    </div>
+    <div class="bet-group">
+      <label>Odd/Even:</label>
+      <select id="bet-odd-even">
+        <option value="">None</option>
+        <option value="odd">Odd</option>
+        <option value="even">Even</option>
+      </select>
+    </div>
+    <div class="bet-group">
+      <label>Third:</label>
+      <select id="bet-third">
+        <option value="">None</option>
+        <option value="first">1st (1–12)</option>
+        <option value="second">2nd (13–24)</option>
+        <option value="third">3rd (25–36)</option>
+      </select>
+    </div>
+    <div class="bet-group">
+      <label>Amount:</label>
+      <input type="number" id="bet-amount" min="1">
+    </div>
+    <button onclick="spinWheel()">Spin</button>
+  `;
+}
+

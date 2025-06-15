@@ -1,0 +1,195 @@
+/* Base styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #111;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+h1, h2 {
+  color: gold;
+}
+
+.game-container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: auto;
+}
+
+/* Blackjack Table */
+.table {
+  background-color: #006400;
+  border: 8px solid #4b2e1e;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 20px auto;
+  position: relative;
+}
+
+/* Card Styles */
+.card {
+  width: 80px;
+  height: 120px;
+  border-radius: 8px;
+  background-color: black;
+  color: gold;
+  display: inline-block;
+  margin: 5px;
+  position: relative;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  font-weight: bold;
+  font-size: 18px;
+  transition: transform 0.5s ease;
+}
+
+.card.animate {
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.card .corner {
+  position: absolute;
+  font-size: 16px;
+}
+
+.top-left {
+  top: 4px;
+  left: 6px;
+}
+
+.bottom-right {
+  bottom: 4px;
+  right: 6px;
+}
+
+.card .suit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 30px;
+}
+
+.card-back {
+  background-color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.card-logo {
+  color: gold;
+  font-size: 40px;
+}
+
+.gold-text {
+  color: gold;
+}
+
+/* Hands */
+.hand {
+  margin: 10px 0;
+}
+
+/* Leaderboard */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+th, td {
+  border: 1px solid #444;
+  padding: 8px;
+  color: gold;
+}
+
+th {
+  background-color: #222;
+}
+
+/* Betting and controls */
+#betting, #controls {
+  margin: 20px 0;
+}
+
+input[type="number"] {
+  padding: 6px;
+  border-radius: 4px;
+  border: none;
+  width: 100px;
+  margin-right: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  background-color: gold;
+  color: black;
+  font-weight: bold;
+  border-radius: 6px;
+  margin: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #ffd700;
+}
+
+#betting-controls {
+  background: #111;
+  padding: 1em;
+  border-radius: 10px;
+  max-width: 400px;
+  margin: 1em auto;
+  color: gold;
+  font-family: 'Segoe UI', sans-serif;
+  box-shadow: 0 0 10px #000;
+}
+.bet-group {
+  margin-bottom: 1em;
+}
+.bet-group label {
+  display: block;
+  margin-bottom: 0.5em;
+  font-weight: bold;
+}
+#chip-buttons button {
+  margin: 0.25em;
+  padding: 0.5em 1em;
+  background: black;
+  border: 1px solid gold;
+  color: gold;
+  cursor: pointer;
+}
+#chip-buttons button:hover {
+  background: gold;
+  color: black;
+}
+button {
+  background: gold;
+  color: black;
+  padding: 0.6em 1.2em;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover {
+  background: #ffd700;
+}
+

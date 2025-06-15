@@ -1,0 +1,154 @@
+// blackjack.js
+let deck = [];
+let playerHand = [];
+let dealerHand = [];
+let balance = 1000;
+let playerName = localStorage.getItem("playerName") || prompt("Enter your name:");
+localStorage.setItem("playerName", playerName);
+
+const suits = ["♠", "♥", "♦", "♣"];
+const values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
+function createDeck() {
+  deck = [];
+  for (let suit of suits) {
+    for (let value of values) {
+      deck.push({ suit, value });
+    }
+  }
+  deck = deck.sort(() => Math.random() - 0.5);
+}
+
+function getCardValue(card) {
+  if (["K", "Q", "J"].includes(card.value)) return 10;
+  if (card.value === "A") return 11;
+  return parseInt(card.value);
+}
+
+function calculateHand(hand) {
+  let total = 0;
+  let aces = 0;
+  for (let card of hand) {
+    total += getCardValue(card);
+    if (card.value === "A") aces++;
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return total;
+}
+
+function renderCard(card, container, animate = true) {
+  const div = document.createElement("div");
+  div.className = "card black-card gold-text";
+  if (animate) div.classList.add("animate");
+  div.innerHTML = `
+    <div class="corner top-left">${card.value}${card.suit}</div>
+    <div class="suit">${card.suit}</div>
+    <div class="corner bottom-right">${card.value}${card.suit}</div>
+  `;
+  container.appendChild(div);
+}
+
+function renderHands() {
+  const dealerDiv = document.getElementById("dealer-hand");
+  const playerDiv = document.getElementById("player-hand");
+  dealerDiv.innerHTML = "";
+  playerDiv.innerHTML = "";
+  dealerHand.forEach((card, i) => {
+    if (i === 0 && gameInProgress) {
+      const back = document.createElement("div");
+      back.className = "card card-back black-card gold-text";
+      back.innerHTML = '<div class="card-logo">A</div>';
+      dealerDiv.appendChild(back);
+    } else {
+      renderCard(card, dealerDiv);
+    }
+  });
+  playerHand.forEach(card => renderCard(card, playerDiv));
+}
+
+function updateCurrency() {
+  document.getElementById("currency").textContent = `$${balance}`;
+}
+
+function updateLeaderboard() {
+  const tbody = document.getElementById("leaderboard-body");
+  let leaderboard = JSON.parse(localStorage.getItem("leaderboard") || "[]");
+  leaderboard = leaderboard.filter(x => x.name);
+  leaderboard.push({ name: playerName, score: balance, time: new Date().toLocaleString() });
+  leaderboard.sort((a, b) => b.score - a.score);
+  localStorage.setItem("leaderboard", JSON.stringify(leaderboard.slice(0, 10)));
+  tbody.innerHTML = leaderboard.slice(0, 10).map((entry, i) => `
+    <tr><td>${i + 1}</td><td>${entry.name}</td><td>${entry.score}</td><td>${entry.time}</td></tr>
+  `).join("");
+}
+
+let gameInProgress = false;
+
+function startGame() {
+  const bet = parseInt(document.getElementById("bet").value);
+  if (bet > balance || bet < 1) {
+    alert("Invalid bet");
+    return;
+  }
+  gameInProgress = true;
+  createDeck();
+  playerHand = [deck.pop(), deck.pop()];
+  dealerHand = [deck.pop(), deck.pop()];
+  renderHands();
+  document.getElementById("result").textContent = "";
+}
+
+function endGame(message, win = false) {
+  gameInProgress = false;
+  document.getElementById("result").textContent = message;
+  const bet = parseInt(document.getElementById("bet").value);
+  if (win) balance += bet;
+  else balance -= bet;
+  updateCurrency();
+  updateLeaderboard();
+  renderHands();
+}
+
+function hit() {
+  if (!gameInProgress) return;
+  playerHand.push(deck.pop());
+  renderHands();
+  const total = calculateHand(playerHand);
+  if (total > 21) endGame("Bust! You lose.", false);
+}
+
+function stand() {
+  if (!gameInProgress) return;
+  while (calculateHand(dealerHand) < 17) {
+    dealerHand.push(deck.pop());
+  }
+  const playerTotal = calculateHand(playerHand);
+  const dealerTotal = calculateHand(dealerHand);
+  if (dealerTotal > 21 || playerTotal > dealerTotal) endGame("You win!", true);
+  else if (playerTotal === dealerTotal) endGame("Push. It's a tie.");
+  else endGame("Dealer wins.", false);
+}
+
+function doubleDown() {
+  const bet = parseInt(document.getElementById("bet").value);
+  document.getElementById("bet").value = bet * 2;
+  hit();
+  if (gameInProgress) stand();
+}
+
+function split() {
+  alert("Split is not implemented yet.");
+}
+
+updateCurrency();
+updateLeaderboard();
+
+// Optional AI keybind
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey && e.key.toLowerCase() === "a") {
+    window.open("https://chat.openai.com", "_blank");
+  }
+});
